@@ -62,11 +62,12 @@ router.post('/good', isLoggedIn, upload.single('img'), async (req, res, next) =>
     const good = await Good.create({
       OwnerId: req.user.id,
       name,
+      end: req.body.end,
       img: req.file.filename,
       price,
     });
     const end = new Date();
-    end.setDate(end.getDate() + 1);
+    end.setHours(end.getHours() + good.end);
     schedule.scheduleJob(end, async () => {
       const success = await Auction.findOne({
         where: { GoodId: good.id },
@@ -128,6 +129,9 @@ router.post('/good/:id/bid', isLoggedIn, async (req, res, next) => {
     }
     if (good.Auctions[0] && good.Auctions[0].bid >= bid) {
       return res.status(403).send('이전 입찰가보다 높아야 합니다');
+    }
+    if (good.OwnerId === req.user.id) {
+      return res.status(403).send('상품등록자는 경매에 참여할 수 없습니다');
     }
     const result = await Auction.create({
       bid,

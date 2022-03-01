@@ -4,15 +4,13 @@ const { Good, Auction, User, sequelize } = require('./models');
 
 module.exports = async () => {
     try {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
         const targets = await Good.findAll({
-            where: {
-                SoldId: null,
-                createdAt: { [Op.lte]: yesterday },
-            },
+            where: { SoldId: null },
         });
         targets.forEach(async (target) => {
+            const end = new Date(target.createdAt);
+            end.setHours(end.getHours() + target.end);
+            if ( new Date() > end){
             const success = await Auction.findOne({
                 where: { GoodId: target.id },
                 order: [['bid', 'DESC']],
@@ -23,6 +21,7 @@ module.exports = async () => {
             }, {
                 where: { id: success.UserId },
             });
+        }
         });
     } catch (error) {
         console.error(error);
